@@ -1,0 +1,74 @@
+# version
+version: '3'
+
+# services
+services:
+
+  # mariadb
+  mariadb:
+    build:
+      context: ./requirements/mariadb
+      dockerfile: Dockerfile
+    container_name: mariadb
+    env_file: .env
+    restart: always
+    networks:
+      - inception-networks
+    volumes:
+      - db-volumes:/var/lib/mysql
+
+  # wordpress
+  wordpress:
+    build:
+      context: ./requirements/wordpress
+      dockerfile: Dockerfile
+    container_name: wordpress
+    env_file: .env
+    restart: always
+    networks:
+      - inception-networks
+    volumes:
+      - wordpress-volumes:/var/www/html
+    depends_on: 
+      - mariadb
+
+  # nginx
+  nginx:
+    build:
+      context: ./requirements/nginx
+      dockerfile: Dockerfile
+    container_name: nginx
+    env_file: .env
+    restart: always
+    networks:
+      - inception-networks
+    volumes:
+      - wordpress-volumes:/var/www/html
+    ports:
+      - "443:443"
+    depends_on:
+      - wordpress
+
+# networks
+networks:
+  inception-networks:
+    name: inception-networks
+    driver: bridge
+
+# volumes
+volumes:
+  wordpress-volumes:
+    name: wordpress-volumes
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/yeju/data/wordpress-volumes
+
+  db-volumes:
+    name: db-volumes
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/yeju/data/db-volumes
