@@ -1,5 +1,3 @@
-#!/bin/sh
-
 mkdir -p /home/yeju/data/database
 mkdir -p /home/yeju/data/www
 

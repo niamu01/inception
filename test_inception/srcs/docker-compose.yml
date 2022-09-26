@@ -1,67 +1,74 @@
+# version
+version: '3'
 
-version: "3.9"
+# services
 services:
-#==== NGINX ===================================================================#
-  nginx:
-    container_name: nginx
-    build: requirements/nginx
-    image: nginx
-    env_file: .env
-    depends_on:
-      - mariadb
-    ports:
-      - 443:443
-    networks:
-      - inception
-    volumes:
-      - www:/var/www/html
-    restart: unless-stopped
 
-#==== MARIADB =================================================================#
+  # mariadb
   mariadb:
+    build:
+      context: ./requirements/mariadb
+      dockerfile: Dockerfile
     container_name: mariadb
-    build: requirements/mariadb
-    image: mariadb
     env_file: .env
-    ports:
-      - 3306:3306
+    restart: always
     networks:
-      - inception
+      - inception-networks
     volumes:
       - database:/var/lib/mysql
-    restart: unless-stopped
 
-#==== WORDPRESS ===============================================================#
+  # wordpress
   wordpress:
+    build:
+      context: ./requirements/wordpress
+      dockerfile: Dockerfile
     container_name: wordpress
-    build: requirements/wordpress
-    image: wordpress
     env_file: .env
-    depends_on:
-      - mariadb
+    restart: always
     networks:
-      - inception
+      - inception-networks
     volumes:
       - www:/var/www/html
-    restart: unless-stopped
+    depends_on: 
+      - mariadb
 
-#==============================================================================#
+  # nginx
+  nginx:
+    build:
+      context: ./requirements/nginx
+      dockerfile: Dockerfile
+    container_name: nginx
+    env_file: .env
+    restart: always
+    networks:
+      - inception-networks
+    volumes:
+      - www:/var/www/html
+    ports:
+      - "443:443"
+    depends_on:
+      - wordpress
+
+# networks
+networks:
+  inception-networks:
+    name: inception-networks
+    driver: bridge
+
+# volumes
 volumes:
   www:
+    name: www
     driver: local
     driver_opts:
       type: none
+      o: bind
       device: /home/yeju/data/www
-      o: bind
+
   database:
+    name: database
     driver: local
     driver_opts:
       type: none
-      device: /home/yeju/data/database
       o: bind
-
-  #============================================================================#
-networks:
-  inception:
-    name: inception
-    driver: bridge
+      device: /home/yeju/data/database
