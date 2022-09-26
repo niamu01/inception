@@ -1,71 +1,38 @@
-
-NAME			:=	inception
-VERSION			:=	1.0
-
-# -----------------------------------------------------------------------------
-# COMPILATION
-# -----------------------------------------------------------------------------
-SRCS_DIR		:=	srcs
-
-COMPOSE_FILE	:=	${SRCS_DIR}/docker-compose.yml
-ENV_FILE		:=	${SRCS_DIR}/.env
-
-FLAGS			:=	-f ${COMPOSE_FILE} \
-					-p ${NAME}
-
-# -----------------------------------------------------------------------------
-# COLORS
-# -----------------------------------------------------------------------------
-__RED			:=	"\033[1;31m"
-__GREEN			:=	"\033[1;32m"
-__YELLOW		:=	"\033[1;33m"
-__BLUE			:=	"\033[1;36m"
-__WHITE			:=	"\033[1;37m"
-__EOC			:=	"\033[0;0m"
 DATA_PATH=/home/yeju/data
 
-# -----------------------------------------------------------------------------
-# RULES
-# -----------------------------------------------------------------------------
-all: build
+.PHONY: all
+all: host build
 
+.PHONY: host
+host:
+	@sudo sed -i "s/localhost/yeju.42.fr/g" /etc/hosts
+
+.PHONY: build
 build:
-	@sudo mkdir -p ${DATA_PATH}/www
-	@sudo mkdir -p ${DATA_PATH}/database
-	@docker-compose ${FLAGS} up -d --build
-	@echo ${__GREEN}"ready"${__WHITE}" - docker services are up"${__EOC}
+	@mkdir -p ${DATA_PATH}/database
+	@mkdir -p ${DATA_PATH}/www
+	@docker-compose -f ./srcs/docker-compose.yml up -d --build
 
-start:
-	@docker-compose ${FLAGS} start > /dev/null
-	@echo ${__GREEN}"ready"${__WHITE}" - docker services have been started"${__EOC}
-
+.PHONY: stop
 stop:
-	@docker-compose ${FLAGS} stop > /dev/null
-	@echo ${__RED}"stopped"${__WHITE}" - docker services have been stopped"${__EOC}
+	@docker-compose -f ./srcs/docker-compose.yml stop
 
-status:
-	@docker-compose ${FLAGS} ps
-
+.PHONY: clean
 clean:
-	@rm -rf /home/yeju/data/www/* > /dev/null
-	@rm -rf /home/yeju/data/database/* > /dev/null
-	@echo ${__BLUE}"info"${__WHITE}" - cleaned docker data"${__EOC}
+	@sudo rm -rf $(HOME)/data
 
-fclean: clean
-	@docker rmi -f nginx > /dev/null
-	@docker rmi -f mariadb > /dev/null
-	@docker rmi -f wordpress > /dev/null
-	@echo ${__BLUE}"info"${__WHITE}" - cleaned docker images(s)"${__EOC}
-	@docker rm -f nginx > /dev/null
-	@docker rm -f mariadb > /dev/null
-	@docker rm -f wordpress > /dev/null
-	@echo ${__BLUE}"info"${__WHITE}" - cleaned docker container(s)"${__EOC}
-	@docker volume rm -f inception_database > /dev/null
-	@docker volume rm -f inception_www > /dev/null
-	@echo ${__BLUE}"info"${__WHITE}" - cleaned docker volumes(s)"${__EOC}
-	@docker network rm inception > /dev/null
-	@echo ${__BLUE}"info"${__WHITE}" - cleaned docker network(s)"${__EOC}
+.PHONY: fclean
+fclean: stop clean
+	docker system prune -a
 
+.PHONY: re
 re: stop fclean all
 
-.PHONY: all start stop status fclean clean re
+.PHONY: ls
+ls:
+	@echo ==============IMAGES==============
+	@docker images
+	@echo ==============NETWORK==============
+	@docker network ls
+	@echo ==============PS-ALL==============
+	@docker ps -a
